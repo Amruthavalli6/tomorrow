@@ -1,0 +1,106 @@
+# -------------------------------
+# 1️⃣ Add Puppet repository and update
+# -------------------------------
+wget https://apt.puppet.com/puppet8-release-bookworm.deb
+sudo dpkg -i puppet8-release-bookworm.deb
+sudo apt update
+# -------------------------------
+# 2️⃣ Install Puppet Server and Agent
+# -------------------------------
+sudo apt install puppetserver puppet-agent -y
+# -------------------------------
+# 5️⃣ Start and enable Puppet Server
+# -------------------------------
+sudo systemctl start puppetserver
+sudo systemctl enable puppetserver
+sudo systemctl status puppetserver
+
+# -------------------------------
+# 6️⃣ Configure Puppet Agent
+# -------------------------------
+sudo nano /etc/puppetlabs/puppet/puppet.conf
+# Add the following [agent] section:
+# [agent]
+# server = desktop-shdkp04.localdomain
+# certname = desktop-shdkp04.localdomain
+# environment = production
+# runinterval = 30m
+# -------------------------------
+# 7️⃣ Remove old SSL files (to avoid certificate mismatch)
+# -------------------------------
+sudo rm -rf /etc/puppetlabs/puppet/ssl
+# -------------------------------
+# 8️⃣ Start and enable Puppet Agent
+# -------------------------------
+sudo systemctl start puppet
+sudo systemctl enable puppet
+# -------------------------------
+# 9️⃣ Run Puppet Agent to create new certificate request
+# -------------------------------
+sudo /opt/puppetlabs/bin/puppet agent --test
+  SECOND 
+  # -------------------------------
+# 1️⃣ Verify Puppet installation
+# -------------------------------
+puppet --version
+
+# -------------------------------
+# 2️⃣ Create module structure
+# -------------------------------
+mkdir -p ~/puppet-demo/modules/webserver/{manifests,lib/puppet/functions/webserver}
+
+# -------------------------------
+# 3️⃣ Create class manifest (init.pp)
+# -------------------------------
+nano ~/puppet-demo/modules/webserver/manifests/init.pp
+# Add the following content:
+# class webserver {
+#   package { 'apache2':
+#     ensure => installed,
+#   }
+#
+#   service { 'apache2':
+#     ensure => running,
+#     enable => true,
+#   }
+#
+#   file { '/var/www/html/index.html':
+#     ensure  => file,
+#     content => "<h1>Hello from Puppet Webserver!</h1>",
+#   }
+#
+#   # Call custom function correctly in Puppet 8
+#   $message = webserver::greet()
+#   notify { $message: }
+# }
+
+# -------------------------------
+# 4️⃣ Create custom function (greet.rb)
+# -------------------------------
+nano ~/puppet-demo/modules/webserver/lib/puppet/functions/webserver/greet.rb
+# Add the following content:
+# Puppet::Functions.create_function(:'webserver::greet') do
+#   def greet()
+#     "Webserver setup done!"
+#   end
+# end
+
+# -------------------------------
+# 5️⃣ Create main manifest (site.pp)
+# -------------------------------
+nano ~/puppet-demo/site.pp
+# Add the following content:
+# include webserver
+
+# -------------------------------
+# 6️⃣ Apply Puppet manifest
+# -------------------------------
+sudo /opt/puppetlabs/bin/puppet apply /home/sampujya017/puppet-demo/site.pp --modulepath=/home/sampujya017/puppet-demo/modules --debug
+
+# -------------------------------
+# 7️⃣ Verify Apache service and HTML content
+# -------------------------------
+systemctl status apache2
+cat /var/www/html/index.html
+# Output should be:
+# <h1>Hello from Puppet Webserver!</h1>
