@@ -1,0 +1,98 @@
+
+design and impl.eemt a puppet configration using manifests,modules classes and functions mto automate the installation of software package eg apache or ngnix analyse how modularization and reusablility are acheived in puppet configuration management
+# 1. Verify Puppet
+puppet --version
+
+# 2. Create module structure
+mkdir -p ~/puppet-demo/modules/webserver/{manifests,lib/puppet/functions/webserver}
+
+# Create class manifest
+tee ~/puppet-demo/modules/webserver/manifests/init.pp > /dev/null <<'EOF'
+class webserver {
+  package { 'apache2': ensure => installed }
+
+  service { 'apache2':
+    ensure => running,
+    enable => true,
+  }
+
+  file { '/var/www/html/index.html':
+    ensure  => file,
+    content => "<h1>Hello from Puppet Webserver!</h1>"
+  }
+
+  notify { 'webserver_notice':
+    message => webserver::greet(),
+  }
+}
+EOF
+
+# Create function
+tee ~/puppet-demo/modules/webserver/lib/puppet/functions/webserver/greet.rb > /dev/null <<'EOF'
+Puppet::Functions.create_function(:'webserver::greet') do
+  def greet()
+    "Webserver setup done!"
+  end
+end
+EOF
+
+# Create main manifest
+tee ~/puppet-demo/site.pp > /dev/null <<'EOF'
+include webserver
+EOF
+
+# 3. Apply Puppet manifest
+sudo /opt/puppetlabs/bin/puppet apply ~/puppet-demo/site.pp --modulepath=~/puppet-demo/modules
+
+# 4. Verify Apache and HTML
+systemctl status apache2
+cat /var/www/html/index.html
+TRY
+# 1. Verify Puppet
+puppet --version
+
+# 2. Create module structure
+mkdir -p ~/puppet-demo/modules/webserver/{manifests,lib/puppet/functions/webserver}
+
+# Create class manifest
+tee ~/puppet-demo/modules/webserver/manifests/init.pp > /dev/null <<'EOF'
+class webserver {
+  package { 'apache2': ensure => installed }
+
+  service { 'apache2':
+    ensure => running,
+    enable => true,
+  }
+
+  file { '/var/www/html/index.html':
+    ensure  => file,
+    content => "<h1>Hello from Puppet Webserver!</h1>"
+  }
+
+  notify { 'webserver_notice':
+    message => webserver::greet(),
+  }
+}
+EOF
+
+# Create function
+tee ~/puppet-demo/modules/webserver/lib/puppet/functions/webserver/greet.rb > /dev/null <<'EOF'
+Puppet::Functions.create_function(:'webserver::greet') do
+  def greet()
+    "Webserver setup done!"
+  end
+end
+EOF
+
+# Create main manifest
+tee ~/puppet-demo/site.pp > /dev/null <<'EOF'
+include webserver
+EOF
+
+# 3. Apply Puppet manifest
+sudo /opt/puppetlabs/bin/puppet apply ~/puppet-demo/site.pp --modulepath=~/puppet-demo/modules
+
+# 4. Verify Apache and HTML
+systemctl status apache2
+cat /var/www/html/index.html
+
