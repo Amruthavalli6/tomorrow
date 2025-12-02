@@ -1,0 +1,5 @@
+git status
+echo "Git experiment file" > lab1.txt
+git add lab1.txt
+git commit -m "Initial commit"
+git push
